@@ -1,0 +1,62 @@
+# ConfigHub — cloud build of a debug APK (program-first version)
+#
+# This workflow builds ONLY the existing project in this repository.
+# It does not build a real VPN tunnel, does not add Psiphon, and does
+# not change the panel design. The resulting APK is a debug build of
+# the program-first version: the UI, collector logic and VpnService
+# skeleton are present, but the native sing-box core is still a TODO,
+# so there is NO real tunnel yet. Real connection, real kill-switch
+# blocking and Psiphon are future work, per Ahmad's 2026-11-04 order.
+#
+# No APK is built in this workspace and no download link is provided
+# here. The APK appears only as a workflow artifact after this
+# workflow runs successfully on GitHub, and only the repository owner
+# (signed in to GitHub) can download it from that run.
+
+name: Build ConfigHub debug APK
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-debug-apk:
+    name: Build debug APK
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out project
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Set up Gradle
+        # The project currently has no Gradle wrapper files, so this
+        # step provides Gradle itself. Version 8.7 is pinned because
+        # Android Gradle Plugin 8.5.2 in this project requires it.
+        # If a wrapper is added later, replace the build step below
+        # with ./gradlew assembleDebug.
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: "8.7"
+
+      - name: Build debug APK
+        run: gradle assembleDebug --stacktrace
+
+      - name: Upload debug APK as workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: confighub-debug-apk
+          path: app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 7

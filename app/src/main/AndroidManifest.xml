@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <!-- Required for a future real tunnel. Declaring it does not, by itself,
+         open a tunnel: the user must approve the VPN dialog at connect time. -->
+    <uses-permission android:name="android.permission.BIND_VPN_SERVICE" />
+
+    <application
+        android:label="ConfigHub"
+        android:theme="@style/Theme.ConfigHub">
+        <activity
+            android:name=".MainActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <!-- Real VpnService subclass (step 2). Declaring it does not, by
+             itself, open an encrypted tunnel: the user must approve the
+             VPN dialog at connect time, and the native sing-box core
+             must still be linked before CONNECTED can be reported. -->
+        <service
+            android:name=".vpn.ConfigHubVpnService"
+            android:permission="android.permission.BIND_VPN_SERVICE"
+            android:exported="false" />
+    </application>
+</manifest>
