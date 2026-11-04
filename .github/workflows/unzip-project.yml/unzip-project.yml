@@ -1,0 +1,30 @@
+name: Unzip project archive
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  unzip:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Extract archive and commit extracted files
+        run: |
+          rm -rf /tmp/extracted
+          mkdir -p /tmp/extracted
+          unzip -o confighub-android.zip -d /tmp/extracted
+          SRC=/tmp/extracted
+          ENTRIES=$(find "$SRC" -mindepth 1 -maxdepth 1)
+          COUNT=$(echo "$ENTRIES" | wc -l)
+          if [ "$COUNT" -eq 1 ] && [ -d "$ENTRIES" ]; then
+            SRC="$ENTRIES"
+          fi
+          cp -a "$SRC"/. .
+          rm -f confighub-android.zip
+          rm -f .github/workflows/unzip-project.yml
+          git config user.name "ahmad6975"
+          git config user.email "ahmad6975@users.noreply.github.com"
+          git add -A
+          git status --short
+          git commit -m "Extract ConfigHub Android project files" || echo "No changes to commit"
+          git push
