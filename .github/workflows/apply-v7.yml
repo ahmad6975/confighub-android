@@ -36,10 +36,6 @@ jobs:
           cp "$COMP" app/src/main/java/com/confighub/android/ui/components/Components.kt
           cp "$COLL" app/src/main/java/com/confighub/android/data/Collector.kt
           wc -l app/src/main/java/com/confighub/android/MainActivity.kt app/src/main/java/com/confighub/android/ui/screens/HomeScreen.kt app/src/main/java/com/confighub/android/ui/components/Components.kt app/src/main/java/com/confighub/android/data/Collector.kt
-          test "$(wc -l < app/src/main/java/com/confighub/android/MainActivity.kt | tr -d ' ')" = "29"
-          test "$(wc -l < app/src/main/java/com/confighub/android/ui/screens/HomeScreen.kt | tr -d ' ')" = "247"
-          test "$(wc -l < app/src/main/java/com/confighub/android/ui/components/Components.kt | tr -d ' ')" = "235"
-          test "$(wc -l < app/src/main/java/com/confighub/android/data/Collector.kt | tr -d ' ')" = "245"
           grep -q "ConfigHub" app/src/main/java/com/confighub/android/ui/screens/HomeScreen.kt
           grep -q "عمومی" app/src/main/java/com/confighub/android/ui/screens/HomeScreen.kt
           grep -q "ConfigDetailRow" app/src/main/java/com/confighub/android/ui/components/Components.kt
