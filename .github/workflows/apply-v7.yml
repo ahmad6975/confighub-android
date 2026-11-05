@@ -1,0 +1,53 @@
+name: Apply ConfigHub v7
+
+on:
+  push:
+    paths:
+      - confighub-android-v7.zip
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Unzip v7 and copy four files byte-for-byte
+        run: |
+          set -e
+          mkdir -p /tmp/v7
+          unzip -o confighub-android-v7.zip -d /tmp/v7
+          find /tmp/v7 -type f | sort
+          MAIN=$(find /tmp/v7 -path '*com/confighub/android/MainActivity.kt' | head -n 1)
+          HS=$(find /tmp/v7 -path '*ui/screens/HomeScreen.kt' | head -n 1)
+          COMP=$(find /tmp/v7 -path '*ui/components/Components.kt' | head -n 1)
+          COLL=$(find /tmp/v7 -path '*data/Collector.kt' | head -n 1)
+          echo "MainActivity: $MAIN"
+          echo "HomeScreen: $HS"
+          echo "Components: $COMP"
+          echo "Collector: $COLL"
+          test -n "$MAIN" && test -n "$HS" && test -n "$COMP" && test -n "$COLL"
+          cp "$MAIN" app/src/main/java/com/confighub/android/MainActivity.kt
+          cp "$HS" app/src/main/java/com/confighub/android/ui/screens/HomeScreen.kt
+          cp "$COMP" app/src/main/java/com/confighub/android/ui/components/Components.kt
+          cp "$COLL" app/src/main/java/com/confighub/android/data/Collector.kt
+          wc -l app/src/main/java/com/confighub/android/MainActivity.kt app/src/main/java/com/confighub/android/ui/screens/HomeScreen.kt app/src/main/java/com/confighub/android/ui/components/Components.kt app/src/main/java/com/confighub/android/data/Collector.kt
+          test "$(wc -l < app/src/main/java/com/confighub/android/MainActivity.kt | tr -d ' ')" = "29"
+          test "$(wc -l < app/src/main/java/com/confighub/android/ui/screens/HomeScreen.kt | tr -d ' ')" = "247"
+          test "$(wc -l < app/src/main/java/com/confighub/android/ui/components/Components.kt | tr -d ' ')" = "235"
+          test "$(wc -l < app/src/main/java/com/confighub/android/data/Collector.kt | tr -d ' ')" = "245"
+          grep -q "ConfigHub" app/src/main/java/com/confighub/android/ui/screens/HomeScreen.kt
+          grep -q "عمومی" app/src/main/java/com/confighub/android/ui/screens/HomeScreen.kt
+          grep -q "ConfigDetailRow" app/src/main/java/com/confighub/android/ui/components/Components.kt
+          if grep -q "اتصال به بهترین کانفیگ" app/src/main/java/com/confighub/android/ui/components/Components.kt; then echo "Forbidden connect string found in Components.kt"; exit 1; fi
+          grep -q "take(300)" app/src/main/java/com/confighub/android/data/Collector.kt
+          rm -f confighub-android-v7.zip .github/workflows/apply-v7.yml
+          git config user.name "ahmad6975"
+          git config user.email "ahmad6975@users.noreply.github.com"
+          git add -A
+          git status --short
+          if git diff --cached --quiet; then echo "No changes to commit"; else git commit -m "Apply ConfigHub v7: MainActivity, HomeScreen, Components, Collector (byte-for-byte from v7 zip)"; git push; fi
