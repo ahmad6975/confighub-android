@@ -1,0 +1,49 @@
+name: Extract ConfigHub icons (temporary)
+
+on:
+  push:
+    branches: [extract-icon-tmp]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  extract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: extract-icon-tmp
+      - name: Extract icons and update manifest
+        run: |
+          set -e
+          mkdir -p extracted
+          unzip -o confighub-android.zip -d extracted
+          MIPMAP_ROOT=$(find extracted -type d -name "mipmap-mdpi" | head -n 1 | xargs dirname)
+          echo "Mipmap root: $MIPMAP_ROOT"
+          test -n "$MIPMAP_ROOT"
+          for d in mdpi hdpi xhdpi xxhdpi xxxhdpi; do
+            mkdir -p "app/src/main/res/mipmap-$d"
+            cp "$MIPMAP_ROOT/mipmap-$d/ic_launcher.png" "app/src/main/res/mipmap-$d/ic_launcher.png"
+            cp "$MIPMAP_ROOT/mipmap-$d/ic_launcher_round.png" "app/src/main/res/mipmap-$d/ic_launcher_round.png"
+          done
+          python3 - <<'PY'
+          import pathlib
+          p = pathlib.Path("app/src/main/AndroidManifest.xml")
+          text = p.read_text()
+          if 'android:icon=' not in text:
+              text = text.replace('<application', '<application\n        android:icon="@mipmap/ic_launcher"\n        android:roundIcon="@mipmap/ic_launcher_round"', 1)
+          p.write_text(text)
+          print(p.read_text())
+          PY
+          ls -R app/src/main/res
+          rm -rf extracted
+          rm -f confighub-android.zip
+          rm -f .github/workflows/extract-icons.yml
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add -A
+          git status --short
+          git commit -m "Add ConfigHub launcher icons and manifest icon lines" || echo "nothing to commit"
+          git push origin HEAD:extract-icon-tmp
