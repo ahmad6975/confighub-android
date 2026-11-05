@@ -21,6 +21,10 @@ import java.util.concurrent.Executors
  *
  * Sources are exactly the panel's GitHub subscription sources. They
  * are public config lists; no credential is involved.
+ *
+ * Adapted to main's Models.kt: Config.id is a String, and
+ * isHealthy/securityRank are computed there, so they are not passed
+ * here. A config with a ping in 1..380 ms is healthy by that rule.
  */
 object Collector {
     const val HEALTHY_PING_MS = 380
@@ -85,7 +89,7 @@ object Collector {
                     val port = Regex("\"port\"\\s*:\\s*\"?(\\d+)\"?").find(json)?.groupValues?.get(1)?.toIntOrNull() ?: return null
                     val name = Regex("\"ps\"\\s*:\\s*\"([^\"]*)\"").find(json)?.groupValues?.get(1) ?: ""
                     val country = countryFromName(name)
-                    Config(id = id, countryCode = country.first, countryNameFa = country.second, countryNameEn = country.third, host = host, port = port, protocol = "vmess", isHealthy = false, pingMs = 0, securityRank = 3)
+                    Config(id = id.toString(), countryCode = country.first, countryNameFa = country.second, countryNameEn = country.third, host = host, port = port, protocol = "vmess", pingMs = 0)
                 }
                 line.startsWith("vless://") || line.startsWith("trojan://") -> {
                     val proto = if (line.startsWith("vless")) "vless" else "trojan"
@@ -96,7 +100,7 @@ object Collector {
                     val port = hostPort.substringAfter(":", "").toIntOrNull() ?: return null
                     val name = URLDecoder.decode(at.substringAfter("#", ""), StandardCharsets.UTF_8)
                     val country = countryFromName(name)
-                    Config(id = id, countryCode = country.first, countryNameFa = country.second, countryNameEn = country.third, host = host, port = port, protocol = proto, isHealthy = false, pingMs = 0, securityRank = if (proto == "trojan") 2 else 3)
+                    Config(id = id.toString(), countryCode = country.first, countryNameFa = country.second, countryNameEn = country.third, host = host, port = port, protocol = proto, pingMs = 0)
                 }
                 line.startsWith("ss://") -> {
                     val rest = line.removePrefix("ss://")
@@ -107,7 +111,7 @@ object Collector {
                     val port = hostPort.substringAfter(":", "").toIntOrNull() ?: return null
                     val name = URLDecoder.decode(at.substringAfter("#", ""), StandardCharsets.UTF_8)
                     val country = countryFromName(name)
-                    Config(id = id, countryCode = country.first, countryNameFa = country.second, countryNameEn = country.third, host = host, port = port, protocol = "ss", isHealthy = false, pingMs = 0, securityRank = 4)
+                    Config(id = id.toString(), countryCode = country.first, countryNameFa = country.second, countryNameEn = country.third, host = host, port = port, protocol = "ss", pingMs = 0)
                 }
                 else -> null
             }
@@ -176,7 +180,7 @@ object Collector {
                 }
                 val healthy = parsed.mapNotNull { cfg ->
                     val ms = tcpPingMs(cfg.host, cfg.port)
-                    if (ms in 1..HEALTHY_PING_MS) cfg.copy(isHealthy = true, pingMs = ms) else null
+                    if (ms in 1..HEALTHY_PING_MS) cfg.copy(pingMs = ms) else null
                 }.sortedBy { it.pingMs }
                 onResult(healthy)
             } catch (e: Exception) {
