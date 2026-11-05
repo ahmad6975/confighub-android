@@ -13,6 +13,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
 import com.confighub.android.data.*
 import com.confighub.android.ui.theme.AccentGreen
@@ -111,25 +113,6 @@ fun ConnectionCard(
                     color = PanelText,
                 )
             }
-            if (state.isServiceRunning || state.isConnected) {
-                Button(
-                    onClick = onDisconnect,
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(14.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = AccentTeal, contentColor = Color(0xFF0F2A33)),
-                ) {
-                    Text(if (isFa) "قطع" else "Disconnect", fontWeight = FontWeight.Bold)
-                }
-            } else {
-                Button(
-                    onClick = onConnectBest,
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(14.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = AccentTeal, contentColor = Color(0xFF0F2A33)),
-                ) {
-                    Text(if (isFa) "اتصال به بهترین کانفیگ" else "Connect to best config", fontWeight = FontWeight.Bold)
-                }
-            }
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -153,7 +136,8 @@ fun CountryGroupCard(
     isFa: Boolean,
     expanded: Boolean,
     onToggle: () -> Unit,
-    onConnect: (Config) -> Unit,
+    onConnect: (Config) -> Unit = {},
+    onToggleStar: (Config) -> Unit = {},
 ) {
     Card(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp),
@@ -185,31 +169,29 @@ fun CountryGroupCard(
             if (expanded) {
                 Spacer(modifier = Modifier.height(10.dp))
                 group.configs.forEach { cfg ->
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Text(
-                            "${cfg.protocol} · ${cfg.host}:${cfg.port} · ${cfg.pingMs} ms",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = PanelText,
-                        )
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            if (cfg.isReality) Text("REALITY ", color = AccentTeal, style = MaterialTheme.typography.labelSmall)
-                            else if (cfg.isObfuscated) Text(if (isFa) "استتار " else "Obfuscated ", color = AccentTeal, style = MaterialTheme.typography.labelSmall)
-                            Button(
-                                onClick = { onConnect(cfg) },
-                                enabled = cfg.isHealthy,
-                                shape = RoundedCornerShape(12.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = AccentTeal, contentColor = Color(0xFF0F2A33)),
-                            ) {
-                                Text(if (isFa) "اتصال" else "Connect")
-                            }
-                        }
-                    }
+                    ConfigDetailRow(cfg = cfg, isFa = isFa, onToggleStar = onToggleStar)
                 }
             }
+        }
+    }
+}
+
+/** One config row, exactly like the panel: badges, ping with bars, copy + star, no Connect button. */
+@Composable
+fun ConfigDetailRow(cfg: Config, isFa: Boolean, onToggleStar: (Config) -> Unit = {}) {
+    val clipboard = LocalClipboardManager.current
+    Column(modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+            Text("${cfg.countryNameFa} — ${cfg.host}", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = PanelText)
+            Text("${cfg.pingMs} ms", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = if (cfg.pingMs <= 150) AccentGreen else if (cfg.pingMs <= 300) Color(0xFFFFB020) else Color(0xFFFF6B6B))
+        }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(cfg.protocol.uppercase(), color = AccentTeal, style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(end = 8.dp))
+            if (cfg.isReality) Text("REALITY", color = AccentTeal, style = MaterialTheme.typography.labelSmall)
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            OutlinedButton(onClick = { clipboard.setText(AnnotatedString("${cfg.protocol}://${cfg.host}:${cfg.port}")) }, shape = RoundedCornerShape(12.dp)) { Text(if (isFa) "کپی" else "Copy") }
+            OutlinedButton(onClick = { onToggleStar(cfg) }, shape = RoundedCornerShape(12.dp)) { Text(if (cfg.isStarred) "★" else "☆") }
         }
     }
 }

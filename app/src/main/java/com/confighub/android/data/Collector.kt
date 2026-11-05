@@ -148,8 +148,8 @@ object Collector {
                 for (url in SOURCES) {
                     try {
                         val conn = java.net.URL(url).openConnection() as java.net.HttpURLConnection
-                        conn.connectTimeout = 10000
-                        conn.readTimeout = 20000
+                        conn.connectTimeout = 5000
+                        conn.readTimeout = 8000
                         conn.inputStream.bufferedReader().useLines { lines ->
                             lines.forEach { line ->
                                 val cfg = parseLink(line, index)
@@ -161,18 +161,19 @@ object Collector {
                         }
                     } catch (_: Exception) { /* one dead source must not kill the update */ }
                 }
+                val pingTargets = candidates.values.take(300)
                 val pool = java.util.concurrent.Executors.newFixedThreadPool(50)
                 val checked = java.util.Collections.synchronizedList(mutableListOf<Config>())
-                val latch = java.util.concurrent.CountDownLatch(candidates.size)
-                for (cfg in candidates.values) {
+                val latch = java.util.concurrent.CountDownLatch(pingTargets.size)
+                for (cfg in pingTargets) {
                     pool.execute {
                         try {
-                            val ms = tcpPingMs(cfg.host, cfg.port)
+                            val ms = tcpPingMs(cfg.host, cfg.port, 1500)
                             if (ms in 1..HEALTHY_PING_MS) checked.add(cfg.copy(pingMs = ms))
                         } finally { latch.countDown() }
                     }
                 }
-                latch.await(120, java.util.concurrent.TimeUnit.SECONDS)
+                latch.await(30, java.util.concurrent.TimeUnit.SECONDS)
                 pool.shutdownNow()
                 val kept = checked.sortedBy { it.pingMs }
                     .groupBy { it.countryCode }
@@ -220,12 +221,12 @@ object Collector {
                 flag = flagFor(code),
                 configs = list,
             )
-        }.sortedBy { it.nameEn }
+        }.sortedWith(compareBy({ it.code != "IR" }, { it.nameEn }))
 
     private fun flagFor(code: String): String = when (code) {
         "US" -> "🇺🇸"; "DE" -> "🇩🇪"; "FR" -> "🇫🇷"; "NL" -> "🇳🇱"
         "GB" -> "🇬🇧"; "TR" -> "🇹🇷"; "AE" -> "🇦🇪"; "JP" -> "🇯🇵"
-        "ID" -> "🇮🇩"; "CA" -> "🇨🇦"; "SE" -> "🇸🇪"; "IR" -> "🇮🇷"
+        "ID" -> "🇮🇩"; "CA" -> "🇨🇦"; "SE" -> "🇸🇪"; "IR" -> "🇮🇷"; "SG" -> "🇸🇬"; "AU" -> "🇦🇺"
         else -> "🏳"
     }
 

@@ -81,6 +81,19 @@ fun HomeScreen(tunnelManager: TunnelManager) {
                     Text(if (isFa) "EN" else "FA")
                 }
             }
+            // Panel header, exactly like the simulator panel.
+            Card(modifier = Modifier.fillMaxWidth().padding(12.dp, 8.dp), shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = DarkBlue.copy(alpha = 0.65f))) {
+                Row(modifier = Modifier.fillMaxWidth().padding(14.dp, 12.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                    Text("ConfigHub", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = PanelText)
+                    Text("🌐", style = MaterialTheme.typography.titleLarge)
+                }
+            }
+            var isAdmin by remember { mutableStateOf(false) }
+            Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text(if (isFa) "نمایش:" else "View:", color = PanelText)
+                Button(onClick = { isAdmin = false }, shape = RoundedCornerShape(14.dp), colors = ButtonDefaults.buttonColors(containerColor = if (!isAdmin) AccentTeal else DarkBlue, contentColor = if (!isAdmin) Color(0xFF0F2A33) else PanelText)) { Text(if (isFa) "عمومی" else "Public", maxLines = 1) }
+                Button(onClick = { isAdmin = true }, shape = RoundedCornerShape(14.dp), colors = ButtonDefaults.buttonColors(containerColor = if (isAdmin) AccentTeal else DarkBlue, contentColor = if (isAdmin) Color(0xFF0F2A33) else PanelText)) { Text(if (isFa) "ادمین" else "Admin", maxLines = 1) }
+            }
             ConnectionCard(
                 state = connection, isFa = isFa,
                 onConnectBest = {
@@ -175,21 +188,25 @@ fun HomeScreen(tunnelManager: TunnelManager) {
                 }
             }
             // Compact profile bar.
-            Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp)) {
-                Profile.values().forEach { p ->
-                    val label = when (p) {
-                        Profile.FASTEST -> if (isFa) "سریع‌ترین" else "Fastest"
-                        Profile.SAFEST -> if (isFa) "امن‌ترین · استتار" else "Safest"
-                        Profile.FAVORITES -> if (isFa) "علاقه‌مندی‌ها" else "Favorites"
-                        Profile.RANDOM -> if (isFa) "تصادفی" else "Random"
+            Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                listOf(listOf(Profile.FASTEST, Profile.SAFEST), listOf(Profile.FAVORITES, Profile.RANDOM)).forEach { rowProfiles ->
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        rowProfiles.forEach { p ->
+                            val label = when (p) {
+                                Profile.FASTEST -> if (isFa) "سریع‌ترین" else "Fastest"
+                                Profile.SAFEST -> if (isFa) "امن‌ترین · استتار" else "Safest"
+                                Profile.FAVORITES -> if (isFa) "علاقه‌مندی‌ها" else "Favorites"
+                                Profile.RANDOM -> if (isFa) "تصادفی" else "Random"
+                            }
+                            FilterChip(
+                                selected = profile == p,
+                                onClick = { profile = p },
+                                label = { Text(label, maxLines = 1) },
+                                modifier = Modifier.weight(1f),
+                                colors = FilterChipDefaults.filterChipColors(selectedContainerColor = AccentTeal, selectedLabelColor = Color(0xFF0F2A33)),
+                            )
+                        }
                     }
-                    FilterChip(
-                        selected = profile == p,
-                        onClick = { profile = p },
-                        label = { Text(label) },
-                        modifier = Modifier.padding(end = 4.dp),
-                        colors = FilterChipDefaults.filterChipColors(selectedContainerColor = AccentTeal, selectedLabelColor = Color(0xFF0F2A33)),
-                    )
                 }
             }
             // Verified & fast, closed by default.
@@ -200,15 +217,9 @@ fun HomeScreen(tunnelManager: TunnelManager) {
                     }
                     if (verifiedExpanded) {
                         verified.forEach { cfg ->
-                            Row(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                                Text("${cfg.protocol} · ${cfg.host}:${cfg.port} · ${cfg.pingMs} ms", style = MaterialTheme.typography.bodySmall, color = PanelText)
-                                Button(
-                                    onClick = { tunnelManager.connect(context, cfg) },
-                                    enabled = cfg.isHealthy,
-                                    shape = RoundedCornerShape(12.dp),
-                                    colors = ButtonDefaults.buttonColors(containerColor = AccentTeal, contentColor = Color(0xFF0F2A33)),
-                                ) { Text(if (isFa) "اتصال" else "Connect") }
-                            }
+                            ConfigDetailRow(cfg = cfg, isFa = isFa, onToggleStar = { starred ->
+                                configs = configs.map { if (it.id == starred.id) it.copy(isStarred = !it.isStarred) else it }
+                            })
                         }
                     }
                 }
@@ -222,7 +233,9 @@ fun HomeScreen(tunnelManager: TunnelManager) {
                     expandedCountries = if (group.code in expandedCountries)
                         expandedCountries - group.code else expandedCountries + group.code
                 },
-                onConnect = { tunnelManager.connect(context, it) },
+                onToggleStar = { starred ->
+                    configs = configs.map { if (it.id == starred.id) it.copy(isStarred = !it.isStarred) else it }
+                },
             )
         }
         item {

@@ -3,6 +3,9 @@ package com.confighub.android
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.LayoutDirection
 import com.confighub.android.ui.screens.HomeScreen
 import com.confighub.android.ui.theme.ConfigHubTheme
 import com.confighub.android.vpn.TunnelManager
@@ -16,8 +19,10 @@ class MainActivity : ComponentActivity() {
         // triggers one collector run here. In this skeleton there is no
         // real fetch yet, so nothing is fetched at this point.
         setContent {
-            ConfigHubTheme {
-                HomeScreen(tunnelManager)
+            CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
+                ConfigHubTheme {
+                    HomeScreen(tunnelManager)
+                }
             }
         }
     }
