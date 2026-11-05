@@ -1,18 +1,34 @@
 package com.confighub.android.ui.components
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.confighub.android.data.*
+import com.confighub.android.ui.theme.AccentGreen
+import com.confighub.android.ui.theme.AccentTeal
+import com.confighub.android.ui.theme.DarkBlue
+import com.confighub.android.ui.theme.DarkGreen
+import com.confighub.android.ui.theme.PanelText
+
+private val CardShape = RoundedCornerShape(20.dp)
+private val PanelBrush = Brush.verticalGradient(listOf(DarkBlue, DarkGreen))
 
 /**
- * Compact top connection card. Deliberately small: status, server name,
- * ping/speed, and a compact connect/disconnect button. No large circle.
- * While the tunnel is a stub, the demo label must stay visible.
- * Adapted to main's Models.kt: ConnectionState.killSwitchOn.
+ * Compact top connection card, now glassy: dark blue-to-green gradient,
+ * rounded corners, a coloured status dot, and a full-width teal button.
+ * Still deliberately small — no large circle. While the tunnel is a stub,
+ * the demo label must stay visible. Real connection stays future work.
  */
 @Composable
 fun ConnectionCard(
@@ -22,145 +38,197 @@ fun ConnectionCard(
     onDisconnect: () -> Unit,
     onKillSwitchChange: (Boolean) -> Unit = {},
 ) {
-    Card(modifier = Modifier.fillMaxWidth().padding(8.dp)) {
-        Column(modifier = Modifier.padding(12.dp, 8.dp)) {
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                // Real status from the VpnService lifecycle, not a demo flag.
-                Text(
-                    when (state.status) {
-                        TunnelStatus.CONNECTED -> if (isFa) "متصل" else "Connected"
-                        TunnelStatus.CONNECTING -> if (isFa) "در حال اتصال…" else "Connecting…"
-                        TunnelStatus.TUN_READY -> if (isFa) "سرویس VPN در حال اجراست" else "VPN service running"
-                        TunnelStatus.BLOCKED_BY_KILL_SWITCH -> if (isFa) "مسدود — کیلسوئیچ" else "Blocked — kill switch"
-                        TunnelStatus.FAILED -> if (isFa) "اتصال ناموفق" else "Connection failed"
-                        else -> if (isFa) "متصل نیست" else "Not connected"
-                    }
-                )
+    Card(
+        modifier = Modifier.fillMaxWidth().padding(12.dp, 8.dp),
+        shape = CardShape,
+        colors = CardDefaults.cardColors(containerColor = Color.Transparent),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+    ) {
+        Column(
+            modifier = Modifier.background(PanelBrush).padding(16.dp, 14.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier.size(10.dp).clip(CircleShape)
+                            .background(if (state.isConnected) AccentGreen else Color(0xFFFFB020))
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        when (state.status) {
+                            TunnelStatus.CONNECTED -> if (isFa) "متصل" else "Connected"
+                            TunnelStatus.CONNECTING -> if (isFa) "در حال اتصال…" else "Connecting…"
+                            TunnelStatus.TUN_READY -> if (isFa) "سرویس VPN در حال اجراست" else "VPN service running"
+                            TunnelStatus.BLOCKED_BY_KILL_SWITCH -> if (isFa) "مسدود — کیلسوئیچ" else "Blocked — kill switch"
+                            TunnelStatus.FAILED -> if (isFa) "اتصال ناموفق" else "Connection failed"
+                            else -> if (isFa) "متصل نیست" else "Not connected"
+                        },
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = PanelText,
+                    )
+                }
                 // Demo label: remove ONLY when TunnelStatus.CONNECTED is
                 // reported by the native sing-box callback (not yet).
                 if (!state.isConnected) {
-                    Text(if (isFa) "نمایشی — شبیهسازی، نه اتصال واقعی VPN" else "Demo — not a real VPN connection")
+                    Text(
+                        if (isFa) "نمایشی" else "Demo",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = AccentTeal,
+                    )
                 }
+            }
+            if (!state.isConnected) {
+                Text(
+                    if (isFa) "شبیهسازی، نه اتصال واقعی VPN" else "Simulation, not a real VPN connection",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = PanelText.copy(alpha = 0.75f),
+                )
             }
             if (state.status == TunnelStatus.TUN_READY) {
-                Text(if (isFa) "رابط TUN ساخته شد؛ هسته sing-box هنوز لینک نشده است." else "TUN built; sing-box core not linked yet.")
+                Text(
+                    if (isFa) "رابط TUN ساخته شد؛ هسته sing-box هنوز لینک نشده است." else "TUN built; sing-box core not yet linked.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = PanelText.copy(alpha = 0.75f),
+                )
             }
             if (state.isBlockedByKillSwitch) {
-                Text(if (isFa) "تونل قطع شد و کیلسوئیچ روشن است. مسدودسازی واقعی بستهها تا لینک هسته، در انتظار است." else "Tunnel stopped and kill switch is on. Real packet blocking waits for core linking.")
+                Text(
+                    if (isFa) "تونل قطع شد و کیلسوئیچ روشن است. مسدودسازی واقعی بستهها تا لینک هسته، در انتظار است." else "Tunnel stopped and kill switch is on. Real packet blocking awaits core linking.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = PanelText.copy(alpha = 0.75f),
+                )
             }
             state.activeConfig?.let { cfg ->
-                Text("${cfg.countryNameFa} — ${cfg.host}:${cfg.port} · ${cfg.pingMs} ms")
+                Text(
+                    "${cfg.countryNameFa} — ${cfg.host}:${cfg.port} · ${cfg.pingMs} ms",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = PanelText,
+                )
             }
-            Row {
-                if (state.isServiceRunning || state.isConnected) {
-                    Button(onClick = onDisconnect, modifier = Modifier.padding(end = 8.dp)) {
-                        Text(if (isFa) "قطع" else "Disconnect")
-                    }
-                } else {
-                    // Compact best-connect button for novices, as in the panel.
-                    Button(onClick = onConnectBest) {
-                        Text(if (isFa) "اتصال به بهترین کانفیگ" else "Connect to best config")
-                    }
+            if (state.isServiceRunning || state.isConnected) {
+                Button(
+                    onClick = onDisconnect,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(14.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = AccentTeal, contentColor = Color(0xFF0F2A33)),
+                ) {
+                    Text(if (isFa) "قطع" else "Disconnect", fontWeight = FontWeight.Bold)
                 }
-                // Tiny kill-switch toggle, kept on the same card so the
-                // page does not gain a new section. It only changes the
-                // in-app gate until real packet blocking exists.
-                Row(modifier = Modifier.padding(start = 8.dp)) {
-                    Text(if (isFa) "کیلسوئیچ" else "Kill switch")
-                    Switch(checked = state.killSwitchOn, onCheckedChange = onKillSwitchChange)
+            } else {
+                Button(
+                    onClick = onConnectBest,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(14.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = AccentTeal, contentColor = Color(0xFF0F2A33)),
+                ) {
+                    Text(if (isFa) "اتصال به بهترین کانفیگ" else "Connect to best config", fontWeight = FontWeight.Bold)
                 }
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(if (isFa) "کیلسوئیچ" else "Kill switch", color = PanelText)
+                Switch(
+                    checked = state.killSwitchOn,
+                    onCheckedChange = onKillSwitchChange,
+                    colors = SwitchDefaults.colors(checkedThumbColor = AccentTeal, checkedTrackColor = AccentTeal.copy(alpha = 0.5f))
+                )
             }
         }
     }
 }
 
-/** Panel-style section header: small, bold, no large background. */
+/** One country group, collapsed by default so the page never crowds. */
 @Composable
-fun SectionHeader(title: String, modifier: Modifier = Modifier) {
-    Text(title, style = MaterialTheme.typography.titleMedium, modifier = modifier.padding(12.dp, 8.dp, 12.dp, 2.dp))
-}
-
-/** Panel-style country group row: flag, name, live healthy count, counts. */
-@Composable
-fun CountryRow(
+fun CountryGroupCard(
     group: CountryGroup,
     isFa: Boolean,
-    onClick: () -> Unit,
-) {
-    val healthy = group.configs.count { it.isHealthy }
-    val best = group.configs.filter { it.isHealthy }.minByOrNull { it.pingMs }
-    Row(
-        modifier = Modifier.fillMaxWidth().clickable { onClick() }.padding(12.dp, 6.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-    ) {
-        Text("${group.flag} ${if (isFa) group.nameFa else group.nameEn}")
-        Text(
-            if (best != null) {
-                if (isFa) "$healthy از ${group.configs.size} سالم · بهترین ${best.pingMs} ms" else "$healthy of ${group.configs.size} healthy · best ${best.pingMs} ms"
-            } else {
-                if (isFa) "0 از ${group.configs.size} سالم" else "0 of ${group.configs.size} healthy"
-            }
-        )
-    }
-}
-
-/** Config row: flag, name, live ping, connect button. */
-@Composable
-fun ConfigRow(
-    cfg: Config,
-    isFa: Boolean,
-    onConnect: () -> Unit,
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(12.dp, 4.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-    ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(if (isFa) cfg.countryNameFa else cfg.countryNameEn)
-            Text("${cfg.host}:${cfg.port} · ${cfg.protocol}")
-        }
-        Text("${cfg.pingMs} ms", modifier = Modifier.padding(end = 8.dp))
-        // Verified connect button: this is the row the update flow
-        // has just pinged live; the button itself is a verified stub.
-        Button(onClick = onConnect) {
-            Text(if (isFa) "اتصال" else "Connect")
-        }
-    }
-}
-
-/** Panel-style "verified & fast" list: real healthy configs, fastest first. */
-@Composable
-fun VerifiedList(
-    configs: List<Config>,
-    isFa: Boolean,
+    expanded: Boolean,
+    onToggle: () -> Unit,
     onConnect: (Config) -> Unit,
 ) {
-    Column {
-        SectionHeader(if (isFa) "تأییدشده و سریع" else "Verified & fast")
-        configs.forEach { cfg ->
+    Card(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = DarkBlue.copy(alpha = 0.65f)),
+    ) {
+        Column(modifier = Modifier.padding(14.dp, 12.dp)) {
             Row(
-                modifier = Modifier.fillMaxWidth().padding(12.dp, 4.dp),
+                modifier = Modifier.fillMaxWidth().clickable { onToggle() },
                 horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(if (isFa) cfg.countryNameFa else cfg.countryNameEn)
-                    Text("${cfg.host}:${cfg.port} · ${cfg.protocol}")
+                Text(
+                    "${group.flag} ${if (isFa) group.nameFa else group.nameEn}",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = PanelText,
+                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        if (isFa) "${group.healthyCount} کانفیگ سالم" else "${group.healthyCount} healthy configs",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = AccentTeal,
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(if (expanded) "˄" else "˅", color = PanelText)
                 }
-                Text("${cfg.pingMs} ms", modifier = Modifier.padding(end = 8.dp))
-                Button(onClick = { onConnect(cfg) }) {
-                    Text(if (isFa) "اتصال" else "Connect")
+            }
+            if (expanded) {
+                Spacer(modifier = Modifier.height(10.dp))
+                group.configs.forEach { cfg ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            "${cfg.protocol} · ${cfg.host}:${cfg.port} · ${cfg.pingMs} ms",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = PanelText,
+                        )
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            if (cfg.isReality) Text("REALITY ", color = AccentTeal, style = MaterialTheme.typography.labelSmall)
+                            else if (cfg.isObfuscated) Text(if (isFa) "استتار " else "Obfuscated ", color = AccentTeal, style = MaterialTheme.typography.labelSmall)
+                            Button(
+                                onClick = { onConnect(cfg) },
+                                enabled = cfg.isHealthy,
+                                shape = RoundedCornerShape(12.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = AccentTeal, contentColor = Color(0xFF0F2A33)),
+                            ) {
+                                Text(if (isFa) "اتصال" else "Connect")
+                            }
+                        }
+                    }
                 }
             }
         }
     }
 }
 
-/** Small, honest note for the panel: connection is future work. */
+/** Support section at the bottom. No fabricated ID: empty means "not set yet". */
 @Composable
-fun DemoNote(isFa: Boolean) {
-    Text(
-        if (isFa) "اتصال VPN هنوز در آینده است؛ این فهرست فقط کانفیگهای سالم را نشان میدهد." else "VPN connection is future work; this list only shows healthy configs.",
-        style = MaterialTheme.typography.bodySmall,
-        modifier = Modifier.padding(12.dp),
-    )
+fun SupportCard(supportId: String?, isFa: Boolean) {
+    Card(
+        modifier = Modifier.fillMaxWidth().padding(12.dp, 8.dp),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = DarkBlue.copy(alpha = 0.65f)),
+    ) {
+        Column(modifier = Modifier.padding(14.dp, 12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text(if (isFa) "پشتیبانی" else "Support", fontWeight = FontWeight.Bold, color = PanelText)
+            Text(
+                supportId ?: if (isFa) "هنوز تنظیم نشده است" else "Not set yet",
+                style = MaterialTheme.typography.bodySmall,
+                color = PanelText.copy(alpha = 0.75f),
+            )
+        }
+    }
 }
