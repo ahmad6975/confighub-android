@@ -12,6 +12,7 @@ import com.confighub.android.data.*
  * Compact top connection card. Deliberately small: status, server name,
  * ping/speed, and a compact connect/disconnect button. No large circle.
  * While the tunnel is a stub, the demo label must stay visible.
+ * Adapted to main's Models.kt: ConnectionState.killSwitchOn.
  */
 @Composable
 fun ConnectionCard(
@@ -66,7 +67,7 @@ fun ConnectionCard(
                 // in-app gate until real packet blocking exists.
                 Row(modifier = Modifier.padding(start = 8.dp)) {
                     Text(if (isFa) "کیلسوئیچ" else "Kill switch")
-                    Switch(checked = state.killSwitch, onCheckedChange = onKillSwitchChange)
+                    Switch(checked = state.killSwitchOn, onCheckedChange = onKillSwitchChange)
                 }
             }
         }
