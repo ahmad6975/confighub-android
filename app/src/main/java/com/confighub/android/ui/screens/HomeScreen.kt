@@ -66,6 +66,7 @@ fun HomeScreen(tunnelManager: TunnelManager) {
 )
         )
     }
+    var added by remember { mutableStateOf<List<Config>>(emptyList()) }
     var updating by remember { mutableStateOf(false) }
     var updateStatus by remember { mutableStateOf("") }
     var addStatus by remember { mutableStateOf("") }
@@ -150,7 +151,9 @@ fun HomeScreen(tunnelManager: TunnelManager) {
                                         val ms = Collector.tcpPingMs(parsed.host, parsed.port)
                                         android.os.Handler(android.os.Looper.getMainLooper()).post {
                                             if (ms in 1..Collector.HEALTHY_PING_MS) {
-                                                configs = configs + parsed.copy(pingMs = ms, id = (configs.size + 1).toString())
+                                                val addedCfg = parsed.copy(pingMs = ms, id = (configs.size + 1).toString())
+                                                configs = configs + addedCfg
+                                                added = added + addedCfg
                                                 link = ""
                                                 addStatus = if (isFa) "کانفیگ واقعی اضافه شد · ${ms} ms" else "Real config added · ${ms} ms"
                                             } else {
