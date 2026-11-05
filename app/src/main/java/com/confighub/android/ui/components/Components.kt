@@ -64,7 +64,7 @@ fun ConnectionCard(
                             TunnelStatus.CONNECTED -> if (isFa) "متصل" else "Connected"
                             TunnelStatus.CONNECTING -> if (isFa) "در حال اتصال…" else "Connecting…"
                             TunnelStatus.TUN_READY -> if (isFa) "سرویس VPN در حال اجراست" else "VPN service running"
-                            TunnelStatus.BLOCKED_BY_KILL_SWITCH -> if (isFa) "مسدود — کیلسوئیچ" else "Blocked — kill switch"
+                            TunnelStatus.BLOCKED_BY_KILL_SWITCH -> if (isFa) "مسدود — کیل‌سوئیچ" else "Blocked — kill switch"
                             TunnelStatus.FAILED -> if (isFa) "اتصال ناموفق" else "Connection failed"
                             else -> if (isFa) "متصل نیست" else "Not connected"
                         },
@@ -85,21 +85,21 @@ fun ConnectionCard(
             }
             if (!state.isConnected) {
                 Text(
-                    if (isFa) "شبیهسازی، نه اتصال واقعی VPN" else "Simulation, not a real VPN connection",
+                    if (isFa) "شبیه‌سازی، نه اتصال واقعی VPN" else "Simulation, not a real VPN connection",
                     style = MaterialTheme.typography.bodySmall,
                     color = PanelText.copy(alpha = 0.75f),
                 )
             }
             if (state.status == TunnelStatus.TUN_READY) {
                 Text(
-                    if (isFa) "رابط TUN ساخته شد؛ هسته sing-box هنوز لینک نشده است." else "TUN built; sing-box core not yet linked.",
+                    if (isFa) "رابط TUN ساخته شد؛ هسته sing-box هنوز لینک نشده است." else "TUN built; sing-box core not linked yet.",
                     style = MaterialTheme.typography.bodySmall,
                     color = PanelText.copy(alpha = 0.75f),
                 )
             }
             if (state.isBlockedByKillSwitch) {
                 Text(
-                    if (isFa) "تونل قطع شد و کیلسوئیچ روشن است. مسدودسازی واقعی بستهها تا لینک هسته، در انتظار است." else "Tunnel stopped and kill switch is on. Real packet blocking awaits core linking.",
+                    if (isFa) "تونل قطع شد و کیل‌سوئیچ روشن است. مسدودسازی واقعی بسته‌ها تا لینک هسته، در انتظار است." else "Tunnel dropped with kill switch on. Real packet blocking is pending native linking.",
                     style = MaterialTheme.typography.bodySmall,
                     color = PanelText.copy(alpha = 0.75f),
                 )
@@ -135,11 +135,11 @@ fun ConnectionCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text(if (isFa) "کیلسوئیچ" else "Kill switch", color = PanelText)
+                Text(if (isFa) "کیل‌سوئیچ" else "Kill switch", color = PanelText)
                 Switch(
                     checked = state.killSwitchOn,
                     onCheckedChange = onKillSwitchChange,
-                    colors = SwitchDefaults.colors(checkedThumbColor = AccentTeal, checkedTrackColor = AccentTeal.copy(alpha = 0.5f))
+                    colors = SwitchDefaults.colors(checkedThumbColor = AccentTeal, checkedTrackColor = AccentTeal.copy(alpha = 0.4f)),
                 )
             }
         }

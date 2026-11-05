@@ -1,16 +1,16 @@
 package com.confighub.android.ui.screens
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.background
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.graphics.Color
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.confighub.android.data.*
@@ -20,6 +20,18 @@ import com.confighub.android.ui.theme.DarkBlue
 import com.confighub.android.ui.theme.PanelText
 import com.confighub.android.vpn.TunnelManager
 
+/**
+ * Home screen layout, in the panel's approved order, kept tidy:
+ *  1. tiny FA/EN toggle at the very top
+ *  2. compact connection card
+ *  3. separate, closed "add config" card (link only, never a country)
+ *  4. compact profile bar (fastest / safest / favorites / random)
+ *  5. closed verified & fast list
+ *  6. country groups, collapsed by default
+ *  7. support at the bottom
+ * Extra tools (search, kill switch, failover, subscription formats) belong
+ * behind "More" / admin, not on this main page.
+ */
 @Composable
 fun HomeScreen(tunnelManager: TunnelManager) {
     var isFa by remember { mutableStateOf(true) }
@@ -28,125 +40,124 @@ fun HomeScreen(tunnelManager: TunnelManager) {
     var verifiedExpanded by remember { mutableStateOf(false) }
     var addExpanded by remember { mutableStateOf(false) }
     var link by remember { mutableStateOf("") }
-    var linkMsg by remember { mutableStateOf("") }
-    var error by remember { mutableStateOf("") }
-    var updating by remember { mutableStateOf(false) }
-    var updateStatus by remember { mutableStateOf("") }
-    var configs by remember {
-        mutableStateOf(
-            listOf(
-                Config("1", "vmess", "dl1.6at.ir", 443, "IR", "ایران", "Iran", 320, isReality = true, isObfuscated = false, isStarred = true),
-                Config("2", "vless", "dl2.6at.ir", 443, "IR", "ایران", "Iran", 340, isReality = true, isObfuscated = false, isStarred = false),
-                Config("3", "vless", "us1.example.com", 443, "US", "آمریکا", "USA", 180, isReality = true, isObfuscated = false, isStarred = false),
-                Config("4", "trojan", "de1.example.com", 443, "DE", "آلمان", "Germany", 210, isReality = false, isObfuscated = false, isStarred = false),
-                Config("5", "ss", "nl1.example.com", 8388, "NL", "هلند", "Netherlands", 240, isReality = false, isObfuscated = true, isStarred = false),
-                Config("6", "vless", "fr1.example.com", 443, "FR", "فرانسه", "France", 260, isReality = false, isObfuscated = false, isStarred = false),
-                Config("7", "vmess", "gb1.example.com", 443, "GB", "بریتانیا", "United Kingdom", 230, isReality = true, isObfuscated = false, isStarred = false),
-                Config("8", "trojan", "tr1.example.com", 443, "TR", "ترکیه", "Turkey", 290, isReality = false, isObfuscated = false, isStarred = false),
-                Config("9", "vless", "jp1.example.com", 443, "JP", "ژاپن", "Japan", 310, isReality = true, isObfuscated = false, isStarred = false),
-                Config("10", "ss", "ca1.example.com", 8388, "CA", "کانادا", "Canada", 270, isReality = false, isObfuscated = true, isStarred = false),
-                Config("11", "vmess", "se1.example.com", 443, "SE", "سوئد", "Sweden", 250, isReality = false, isObfuscated = false, isStarred = false),
-                Config("12", "vless", "ae1.example.com", 443, "AE", "امارات", "UAE", 300, isReality = false, isObfuscated = false, isStarred = false),
-            )
-        )
-    }
-    var added by remember { mutableStateOf<List<Config>>(emptyList()) }
-    var lastUpdate by remember { mutableStateOf("") }
-    val scope = rememberCoroutineScope()
     val connection by tunnelManager.state.collectAsState()
     val context = LocalContext.current
-    val all = configs + added
-    val sorted = Collector.sortForProfile(all, profile)
-    val groups = Collector.groupByCountry(sorted)
-    val verified = Collector.verifiedFast(all, profile)
 
-    LazyColumn(
-        modifier = Modifier.fillMaxSize().background(Color(0xFF0F2A33)),
-        contentPadding = PaddingValues(12.dp, 8.dp),
-    ) {
+    // Real configs, collected 2026-11-05 from the GitHub sources by the
+    // Python collector (TCP-healthy, known country; ping is the ping
+    // shown in the source remark). They are real server hosts, not
+    // demo example domains — but the app still has NO real tunnel yet,
+    // so tapping Connect stays a stub and real connection is future work.
+    var configs by remember {
+        mutableStateOf(
+        listOf(
+    Config("1", "vless", "dl1.6at.ir", 2157, "DE", "آلمان", "Germany", 128, isReality = true),
+    Config("2", "vless", "de1.apexvpn.space", 8443, "DE", "آلمان", "Germany", 128, isReality = true),
+    Config("3", "vless", "82.118.19.153", 443, "DE", "آلمان", "Germany", 3, isReality = true),
+    Config("4", "hysteria2", "oh.sbbz.tech", 443, "US", "آمریکا", "USA", 128, isReality = false),
+    Config("5", "hysteria2", "172.245.6.155", 18687, "US", "آمریکا", "USA", 128, isReality = false),
+    Config("6", "hysteria2", "13.143.189.96", 4444, "US", "آمریکا", "USA", 128, isReality = false),
+    Config("7", "vless", "176.119.141.136", 8443, "NL", "هلند", "Netherlands", 99, isReality = true),
+    Config("8", "vless", "141.227.131.75", 443, "NL", "هلند", "Netherlands", 41, isReality = true),
+    Config("9", "vless", "152.228.139.33", 35108, "FR", "فرانسه", "France", 5, isReality = true),
+    Config("10", "vless", "18.183.215.124", 28573, "JP", "ژاپن", "Japan", 7, isReality = true),
+    Config("11", "vless", "212.69.135.69", 8443, "CA", "کانادا", "Canada", 9, isReality = true),
+    Config("12", "vless", "212.69.135.26", 8443, "CA", "کانادا", "Canada", 7, isReality = true),
+)
+        )
+    }
+    var updating by remember { mutableStateOf(false) }
+    var updateStatus by remember { mutableStateOf("") }
+    var addStatus by remember { mutableStateOf("") }
+    val groups = remember(configs) { Collector.groupByCountry(configs) }
+    val verified = remember(configs, profile) { Collector.verifiedFast(configs, profile) }
+
+    LazyColumn(modifier = Modifier.fillMaxSize().background(Color(0xFF0F2A33)), contentPadding = PaddingValues(vertical = 8.dp)) {
         item {
-            Row(modifier = Modifier.fillMaxWidth().padding(12.dp, 4.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                Text("ConfigHub", color = PanelText, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            // Very small language toggle at the very top.
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                 TextButton(onClick = { isFa = !isFa }) {
-                    Text(if (isFa) "EN" else "فارسی", color = AccentTeal)
+                    Text(if (isFa) "EN" else "FA")
                 }
             }
-        }
-
-        item {
             ConnectionCard(
-                state = connection,
-                isFa = isFa,
+                state = connection, isFa = isFa,
                 onConnectBest = {
-                    val best = verified.firstOrNull() ?: sorted.firstOrNull()
-                    if (best != null) tunnelManager.connectBest(context, listOf(best))
+                    Collector.verifiedFast(configs, profile).firstOrNull()
+                        ?.let { tunnelManager.connectBest(context, it, it.countryCode) }
                 },
-                onDisconnect = { tunnelManager.disconnect() },
+                onDisconnect = { tunnelManager.disconnect(context) },
                 onKillSwitchChange = { tunnelManager.setKillSwitch(it) },
             )
-        }
-
-        item {
+            // Real update: fetch GitHub sources, measure a REAL TCP
+            // ping on this phone right now, keep only healthy known-country
+            // configs. This does NOT connect a VPN.
             Row(modifier = Modifier.fillMaxWidth().padding(12.dp, 4.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    if (isFa) "بروز شده: ${lastUpdate.ifEmpty { "—" }}" else "Updated: ${lastUpdate.ifEmpty { "—" }}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = PanelText.copy(alpha = 0.75f),
-                )
                 Button(
                     onClick = {
                         if (!updating) {
                             updating = true
-                            error = ""
+                            updateStatus = if (isFa) "در حال بروزرسانی…" else "Updating…"
                             Collector.updateFromSources(
                                 onResult = { fresh ->
-                                    configs = fresh
-                                    lastUpdate = if (isFa) "بهروزرسانی شد" else "Updated"
+                                    val freshKeys = fresh.map { "${it.host}:${it.port}" }.toSet()
+                                    configs = fresh + added.filter { "${it.host}:${it.port}" !in freshKeys }
                                     updating = false
+                                    updateStatus = if (isFa) "${fresh.size} کانفیگ واقعی تازه شد" else "${fresh.size} real configs updated"
                                 },
-                                onError = { msg ->
-                                    error = msg
+                                onError = {
                                     updating = false
+                                    updateStatus = if (isFa) "بروزرسانی ناموفق شد؛ دوباره امتحان کن" else "Update failed; try again"
                                 },
                             )
                         }
                     },
+                    enabled = !updating,
                     shape = RoundedCornerShape(14.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = AccentTeal, contentColor = Color(0xFF0F2A33)),
                 ) {
-                    Text(if (updating) (if (isFa) "در حال بهروزرسانی…" else "Updating…") else (if (isFa) "بهروزرسانی" else "Update"))
+                    Text(if (isFa) "بروزرسانی" else "Update", fontWeight = FontWeight.Bold)
+                }
+                if (updateStatus.isNotEmpty()) {
+                    Text(updateStatus, style = MaterialTheme.typography.bodySmall, color = PanelText.copy(alpha = 0.75f))
                 }
             }
-            if (updating) LinearProgressIndicator(modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp))
-            if (error.isNotEmpty()) Text(error, color = Color(0xFFFF6B6B), modifier = Modifier.padding(horizontal = 12.dp))
-            if (updateStatus.isNotEmpty()) Text(updateStatus, style = MaterialTheme.typography.bodySmall, color = PanelText.copy(alpha = 0.75f), modifier = Modifier.padding(horizontal = 12.dp))
-        }
-
-        item {
+            // Add config: separate, closed, link-only. Country is
+            // auto-detected in the real collector, never typed here.
             Card(modifier = Modifier.fillMaxWidth().padding(12.dp, 8.dp), shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = DarkBlue.copy(alpha = 0.65f))) {
-                Column(modifier = Modifier.padding(14.dp, 12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                        Text(if (isFa) "افزودن کانفیگ" else "Add config", fontWeight = FontWeight.Bold, color = PanelText)
-                        TextButton(onClick = { addExpanded = !addExpanded }) {
-                            Text(if (addExpanded) "˄" else "˅", color = PanelText)
-                        }
+                Column(modifier = Modifier.padding(14.dp, 12.dp)) {
+                    TextButton(onClick = { addExpanded = !addExpanded }) {
+                        Text(if (isFa) "+ افزودن کانفیگ" else "+ Add config")
                     }
                     if (addExpanded) {
                         OutlinedTextField(
-                            value = link,
-                            onValueChange = { link = it },
-                            label = { Text(if (isFa) "لینک کانفیگ" else "Config link") },
+                            value = link, onValueChange = { link = it },
+                            label = { Text("vless://…") },
                             modifier = Modifier.fillMaxWidth(),
+                        )
+                        Text(
+                            if (isFa) "فقط لینک کانفیگ؛ کشور خودکار تشخیص داده می‌شود."
+                            else "Link only; country is auto-detected."
                         )
                         Button(
                             onClick = {
-                                val cfg = Collector.parseLink(link, 1000 + added.size)
-                                if (cfg == null || cfg.countryCode == "UNKNOWN") {
-                                    linkMsg = if (isFa) "لینک نامعتبر است" else "Invalid link"
+                                val parsed = Collector.parseLink(link, configs.size + 1)
+                                if (parsed == null) {
+                                    addStatus = if (isFa) "لینک نامعتبر است" else "Invalid link"
                                 } else {
-                                    added = added + cfg
-                                    link = ""
-                                    linkMsg = if (isFa) "اضافه شد" else "Added"
+                                    addStatus = if (isFa) "در حال تست سرور…" else "Testing server…"
+                                    Thread {
+                                        val ms = Collector.tcpPingMs(parsed.host, parsed.port)
+                                        android.os.Handler(android.os.Looper.getMainLooper()).post {
+                                            if (ms in 1..Collector.HEALTHY_PING_MS) {
+                                                configs = configs + parsed.copy(pingMs = ms, id = (configs.size + 1).toString())
+                                                link = ""
+                                                addStatus = if (isFa) "کانفیگ واقعی اضافه شد · ${ms} ms" else "Real config added · ${ms} ms"
+                                            } else {
+                                                addStatus = if (isFa) "سرور جواب نداد" else "Server did not respond"
+                                            }
+                                        }
+                                    }.start()
                                 }
                             },
                             shape = RoundedCornerShape(14.dp),
@@ -154,76 +165,67 @@ fun HomeScreen(tunnelManager: TunnelManager) {
                         ) {
                             Text(if (isFa) "افزودن" else "Add")
                         }
-                        if (linkMsg.isNotEmpty()) Text(linkMsg, color = PanelText)
+                        if (addStatus.isNotEmpty()) {
+                            Text(addStatus, style = MaterialTheme.typography.bodySmall, color = PanelText.copy(alpha = 0.75f))
+                        }
                     }
                 }
             }
-        }
-
-        item {
-            Row(modifier = Modifier.fillMaxWidth().padding(12.dp, 4.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+            // Compact profile bar.
+            Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp)) {
                 Profile.values().forEach { p ->
+                    val label = when (p) {
+                        Profile.FASTEST -> if (isFa) "سریع‌ترین" else "Fastest"
+                        Profile.SAFEST -> if (isFa) "امن‌ترین · استتار" else "Safest"
+                        Profile.FAVORITES -> if (isFa) "علاقه‌مندی‌ها" else "Favorites"
+                        Profile.RANDOM -> if (isFa) "تصادفی" else "Random"
+                    }
                     FilterChip(
                         selected = profile == p,
                         onClick = { profile = p },
-                        label = {
-                            Text(
-                                when (p) {
-                                    Profile.FASTEST -> if (isFa) "سریعترین" else "Fastest"
-                                    Profile.SAFEST -> if (isFa) "امنترین" else "Safest"
-                                    Profile.FAVORITES -> if (isFa) "علاقهمندیها" else "Favorites"
-                                    Profile.RANDOM -> if (isFa) "تصادفی" else "Random"
-                                }
-                            )
-                        },
+                        label = { Text(label) },
+                        modifier = Modifier.padding(end = 4.dp),
                         colors = FilterChipDefaults.filterChipColors(selectedContainerColor = AccentTeal, selectedLabelColor = Color(0xFF0F2A33)),
                     )
                 }
             }
-        }
-
-        item {
+            // Verified & fast, closed by default.
             Card(modifier = Modifier.fillMaxWidth().padding(12.dp, 8.dp), shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = DarkBlue.copy(alpha = 0.65f))) {
                 Column(modifier = Modifier.padding(14.dp, 12.dp)) {
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                        Text(if (isFa) "تاییدشده و سریع" else "Verified & fast", fontWeight = FontWeight.Bold, color = PanelText)
-                        TextButton(onClick = { verifiedExpanded = !verifiedExpanded }) {
-                            Text(if (verifiedExpanded) "˄" else "˅", color = PanelText)
-                        }
+                    TextButton(onClick = { verifiedExpanded = !verifiedExpanded }) {
+                        Text(if (isFa) "تأییدشده و سریع" else "Verified & fast")
                     }
                     if (verifiedExpanded) {
                         verified.forEach { cfg ->
                             Row(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                                 Text("${cfg.protocol} · ${cfg.host}:${cfg.port} · ${cfg.pingMs} ms", style = MaterialTheme.typography.bodySmall, color = PanelText)
                                 Button(
-                                    onClick = { tunnelManager.connectBest(context, listOf(cfg)) },
+                                    onClick = { tunnelManager.connect(context, cfg) },
                                     enabled = cfg.isHealthy,
                                     shape = RoundedCornerShape(12.dp),
                                     colors = ButtonDefaults.buttonColors(containerColor = AccentTeal, contentColor = Color(0xFF0F2A33)),
-                                ) {
-                                    Text(if (isFa) "اتصال" else "Connect")
-                                }
+                                ) { Text(if (isFa) "اتصال" else "Connect") }
                             }
                         }
                     }
                 }
             }
         }
-
-        items(groups, key = { it.code }) { group ->
+        items(groups) { group ->
             CountryGroupCard(
-                group = group,
-                isFa = isFa,
-                expanded = expandedCountries.contains(group.code),
+                group = group, isFa = isFa,
+                expanded = group.code in expandedCountries,
                 onToggle = {
-                    expandedCountries = if (expandedCountries.contains(group.code)) expandedCountries - group.code else expandedCountries + group.code
+                    expandedCountries = if (group.code in expandedCountries)
+                        expandedCountries - group.code else expandedCountries + group.code
                 },
-                onConnect = { cfg -> tunnelManager.connectBest(context, listOf(cfg)) },
+                onConnect = { tunnelManager.connect(context, it) },
             )
         }
-
         item {
+            // No fabricated ID: null means "not set yet" (admin sets it later).
             SupportCard(supportId = null, isFa = isFa)
+            Spacer(modifier = Modifier.height(16.dp))
         }
     }
 }
